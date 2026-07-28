@@ -1,0 +1,1139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Drive Screen</title>
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.13/dist/hls.min.js"></script>
+<style>
+  :root{
+    --bg:#0d0f12; --panel:#15181d; --panel2:#1c2027; --line:#2a2f38;
+    --text:#e9edf2; --dim:#8a93a0; --hot:#d8492b; --gold:#e0b25c; --ok:#5aa469;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%;margin:0}
+  body{background:var(--bg);color:var(--text);font-family:Helvetica Neue,Helvetica,Arial,sans-serif;overflow:hidden}
+  .app{display:flex;flex-direction:column;height:100%}
+
+  /* gate */
+  .gate{position:fixed;top:0;left:0;right:0;bottom:0;background:#08090b;z-index:99;display:flex;align-items:center;justify-content:center}
+  .gate.off{display:none}
+  .gatebox{width:330px;text-align:center}
+  .gatebox h1{font-size:26px;letter-spacing:7px;color:var(--gold);margin:0 0 4px;text-transform:uppercase}
+  .gatebox p{color:var(--dim);font-size:15px;margin:0 0 18px}
+  .dots{height:22px;letter-spacing:12px;font-size:26px;color:var(--gold);margin-bottom:14px}
+  .keys{display:flex;flex-wrap:wrap;gap:10px}
+  .keys div{width:100px;height:64px;line-height:64px;border-radius:12px;background:var(--panel2);
+    border:1px solid var(--line);font-size:24px;cursor:pointer;text-align:center}
+  .keys div:active{background:#252b34}
+  .keys div.act{color:var(--gold);font-size:17px}
+  .gerr{color:var(--hot);font-size:14px;height:18px;margin-top:12px}
+
+  header{display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--panel);border-bottom:1px solid var(--line);flex:0 0 auto}
+  .mark{display:flex;align-items:center;gap:9px;margin-right:6px}
+  .mark svg{width:30px;height:30px;display:block}
+  .mark span{font-size:17px;letter-spacing:5px;text-transform:uppercase;color:var(--gold);font-weight:700;white-space:nowrap}
+  .tab{padding:12px 18px;border-radius:10px;background:var(--panel2);border:1px solid var(--line);color:var(--dim);font-size:17px;cursor:pointer;min-height:52px;display:flex;align-items:center;white-space:nowrap}
+  .tab.on{background:var(--hot);border-color:var(--hot);color:#fff;font-weight:700}
+  .clock{margin-left:auto;font-size:19px;color:var(--dim);letter-spacing:1px}
+
+  .body{display:flex;flex:1 1 auto;min-height:0}
+  .side{width:360px;flex:0 0 360px;background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
+  .side.hide{display:none}
+  .pane{display:none;flex-direction:column;min-height:0;height:100%;overflow-y:auto;-webkit-overflow-scrolling:touch}
+  .pane.on{display:flex}
+  .pad{padding:12px;border-bottom:1px solid var(--line);flex:0 0 auto}
+  label{display:block;font-size:12px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin:0 0 6px}
+  input,textarea,select{width:100%;background:#0a0c0f;border:1px solid var(--line);color:var(--text);border-radius:10px;padding:14px;font-size:17px;font-family:inherit}
+  input+input,input+select,select+input{margin-top:8px}
+  textarea{height:100px;resize:none}
+  .btn{display:block;width:100%;margin-top:10px;padding:15px;border:0;border-radius:10px;background:var(--hot);color:#fff;font-size:17px;font-weight:700;cursor:pointer;letter-spacing:1px}
+  .btn.ghost{background:var(--panel2);border:1px solid var(--line);color:var(--text);font-weight:400}
+  .btn.small{padding:12px;font-size:15px;letter-spacing:0}
+  .row{display:flex;gap:8px}
+  .row>*{flex:1 1 0}
+
+  .who{font-size:13px;color:var(--dim);padding:11px 12px;border-bottom:1px solid var(--line);line-height:1.5;flex:0 0 auto;display:flex;align-items:center;gap:8px}
+  .who b{color:var(--ok)}
+  .who .cog{margin-left:auto;color:var(--dim);font-size:20px;cursor:pointer;padding:0 4px}
+  .src{display:flex;gap:6px;padding:8px 12px;border-bottom:1px solid var(--line);flex:0 0 auto}
+  .src div{flex:1 1 0;text-align:center;padding:11px 4px;border-radius:8px;background:var(--panel2);border:1px solid var(--line);font-size:14px;color:var(--dim);cursor:pointer}
+  .src div.on{background:#22272f;color:var(--gold);border-color:var(--gold)}
+  .find{padding:10px 12px;border-bottom:1px solid var(--line);flex:0 0 auto}
+  .rail{display:flex;gap:6px;overflow-x:auto;padding:9px 12px;border-bottom:1px solid var(--line);flex:0 0 auto;-webkit-overflow-scrolling:touch}
+  .rail::-webkit-scrollbar{height:0}
+  .chip{padding:9px 14px;border-radius:20px;background:var(--panel2);border:1px solid var(--line);color:var(--dim);font-size:14px;white-space:nowrap;cursor:pointer}
+  .chip.on{background:var(--gold);border-color:var(--gold);color:#14161a;font-weight:700}
+  .chip i{font-style:normal;opacity:.6;margin-left:5px;font-size:12px}
+  .list{overflow-y:auto;flex:1 1 auto;-webkit-overflow-scrolling:touch;min-height:80px}
+  .item{padding:15px 14px;border-bottom:1px solid var(--line);cursor:pointer;display:flex;align-items:center;gap:10px}
+  .item:active{background:var(--panel2)}
+  .item.on{background:var(--panel2);border-left:4px solid var(--hot);padding-left:10px}
+  .item .nm{font-size:17px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .item .gp{font-size:12px;color:var(--dim);margin-top:3px}
+  .item .star{margin-left:auto;font-size:20px;color:#3a414c;padding:0 4px}
+  .item .star.on{color:var(--gold)}
+  .empty{padding:20px 14px;color:var(--dim);font-size:15px;line-height:1.6}
+
+  .stage{flex:1 1 auto;position:relative;background:#000;min-width:0;display:flex;flex-direction:column}
+  .screen{flex:1 1 auto;position:relative;background:#000}
+  video,iframe{position:absolute;top:0;left:0;width:100%;height:100%;border:0;background:#000}
+  video.hidepic{opacity:0}
+  .idle{position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px}
+  .idle svg{width:74px;height:74px;margin-bottom:14px}
+  .idle h1{font-size:28px;letter-spacing:8px;margin:0 0 10px;color:var(--gold);text-transform:uppercase}
+  .idle p{color:var(--dim);font-size:16px;margin:4px 0;line-height:1.6;max-width:520px}
+  .earbadge{position:absolute;top:14px;left:14px;background:rgba(0,0,0,.6);border:1px solid var(--line);
+    color:var(--gold);font-size:14px;padding:8px 12px;border-radius:8px;display:none}
+  .earbadge.on{display:block}
+  .bar{flex:0 0 auto;display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--panel);border-top:1px solid var(--line)}
+  .now{font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1 1 auto}
+  .now b{color:var(--gold);font-weight:700}
+  .mini{padding:12px 16px;border-radius:10px;background:var(--panel2);border:1px solid var(--line);color:var(--text);font-size:16px;cursor:pointer;min-height:48px;white-space:nowrap}
+  .mini.warn{border-color:var(--hot);color:var(--hot)}
+  .mini.act{border-color:var(--gold);color:var(--gold)}
+  .msg{padding:11px 12px;font-size:14px;color:var(--gold);background:#241d10;display:none;line-height:1.5}
+  .msg.on{display:block}
+  .note{padding:14px;color:var(--dim);font-size:14px;line-height:1.7;flex:0 0 auto}
+
+  body.full header,body.full .side,body.full .msg{display:none}
+  body.full .bar{background:rgba(0,0,0,.55);border:0}
+  @media (max-width:900px){ .side{width:290px;flex:0 0 290px} .mark span{display:none} .tab{padding:12px 14px;font-size:16px} }
+</style>
+</head>
+<body>
+
+<div class="gate" id="gate">
+  <div class="gatebox">
+    <svg viewBox="0 0 64 64" style="width:52px;height:52px;margin-bottom:10px">
+      <path d="M8 40 L14 26 Q16 22 20 22 L44 22 Q48 22 50 26 L56 40 Z" fill="none" stroke="#e0b25c" stroke-width="3" stroke-linejoin="round"/>
+      <circle cx="20" cy="44" r="5" fill="none" stroke="#e0b25c" stroke-width="3"/>
+      <circle cx="44" cy="44" r="5" fill="none" stroke="#e0b25c" stroke-width="3"/>
+      <path d="M26 33 h12" stroke="#d8492b" stroke-width="3" stroke-linecap="round"/>
+    </svg>
+    <h1>Drive Screen</h1>
+    <p>Private. Enter the PIN.</p>
+    <div class="dots" id="dots"></div>
+    <div class="keys" id="keys">
+      <div>1</div><div>2</div><div>3</div>
+      <div>4</div><div>5</div><div>6</div>
+      <div>7</div><div>8</div><div>9</div>
+      <div class="act" data-k="c">Clear</div><div>0</div><div class="act" data-k="ok">Enter</div>
+    </div>
+    <div class="gerr" id="gerr"></div>
+  </div>
+</div>
+
+<div class="app">
+  <header>
+    <div class="mark">
+      <svg viewBox="0 0 64 64">
+        <path d="M8 40 L14 26 Q16 22 20 22 L44 22 Q48 22 50 26 L56 40 Z" fill="none" stroke="#e0b25c" stroke-width="3" stroke-linejoin="round"/>
+        <circle cx="20" cy="44" r="5" fill="none" stroke="#e0b25c" stroke-width="3"/>
+        <circle cx="44" cy="44" r="5" fill="none" stroke="#e0b25c" stroke-width="3"/>
+        <path d="M26 33 h12" stroke="#d8492b" stroke-width="3" stroke-linecap="round"/>
+      </svg>
+      <span>Drive Screen</span>
+    </div>
+    <div class="tab on" data-tab="tv">Live TV</div>
+    <div class="tab" data-tab="ar">Arabic</div>
+    <div class="tab" data-tab="yt">YouTube</div>
+    <div class="tab" data-tab="set">Setup</div>
+    <div class="clock" id="clock"></div>
+  </header>
+
+  <div class="msg" id="msg"></div>
+
+  <div class="body">
+    <div class="side" id="side">
+
+      <div class="pane on" id="pane-tv">
+        <div class="who" id="who">Not signed in yet<span class="cog" id="cog">&#9881;</span></div>
+
+        <div id="loginBox">
+          <div class="pad">
+            <label>Service address, or paste the whole m3u link</label>
+            <input id="xHost" type="text" placeholder="/svc   or   http://host:port   or the full m3u link">
+            <label style="margin-top:10px">Username</label>
+            <input id="xUser" type="text" autocapitalize="off" autocorrect="off" spellcheck="false">
+            <label style="margin-top:10px">Password</label>
+            <input id="xPass" type="password" autocapitalize="off" autocorrect="off" spellcheck="false">
+            <button class="btn" id="xLogin">Sign in and load channels</button>
+            <div class="row">
+              <button class="btn ghost small" id="xTest">Test in a tab</button>
+              <button class="btn ghost small" id="xPorts">Find the port</button>
+            </div>
+            <div class="row">
+              <button class="btn ghost small" id="xCopy">Show the link</button>
+              <button class="btn ghost small" id="xMovies">Load movies</button>
+            </div>
+            <button class="btn ghost small" id="xRoutes">Try every route</button>
+          </div>
+        </div>
+
+        <div class="src">
+          <div class="on" data-src="xtream">My channels</div>
+          <div data-src="free">Free</div>
+        </div>
+        <div class="find">
+          <input id="search" type="search" placeholder="Search channel">
+        </div>
+        <div class="rail" id="rail"></div>
+        <div class="list" id="chList"></div>
+      </div>
+
+      <div class="pane" id="pane-ar">
+        <div class="note">Free public channels. No account, nothing charged to your subscription.</div>
+        <div class="pad">
+          <button class="btn" data-free="languages/ara">Arabic channels, all</button>
+          <div class="row">
+            <button class="btn ghost small" data-free="countries/eg">Egypt</button>
+            <button class="btn ghost small" data-free="countries/sa">Saudi</button>
+          </div>
+          <div class="row">
+            <button class="btn ghost small" data-free="countries/ae">Emirates</button>
+            <button class="btn ghost small" data-free="countries/lb">Lebanon</button>
+          </div>
+          <div class="row">
+            <button class="btn ghost small" data-free="countries/jo">Jordan</button>
+            <button class="btn ghost small" data-free="countries/ma">Morocco</button>
+          </div>
+          <div class="row">
+            <button class="btn ghost small" data-free="categories/news">News</button>
+            <button class="btn ghost small" data-free="categories/religious">Religious</button>
+          </div>
+          <div class="row">
+            <button class="btn ghost small" data-free="categories/kids">Kids</button>
+            <button class="btn ghost small" data-free="categories/music">Music</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="pane" id="pane-yt">
+        <div class="pad">
+          <label>Search YouTube</label>
+          <input id="ytSearch" type="search" placeholder="What do you want to watch">
+          <button class="btn" id="doSearch">Search on youtube.com</button>
+          <div class="row">
+            <button class="btn ghost small" id="ytHome">YouTube home</button>
+            <button class="btn ghost small" id="ytSubs">Subscriptions</button>
+          </div>
+          <button class="btn ghost small" id="ytSignin">Sign in to my account</button>
+        </div>
+        <div class="pad">
+          <label>Or play one video right here</label>
+          <input id="ytUrl" type="url" placeholder="Paste a YouTube link">
+          <button class="btn" id="playYt">Play on this screen</button>
+        </div>
+        <div class="list" id="ytList"></div>
+      </div>
+
+      <div class="pane" id="pane-set">
+        <div class="pad">
+          <label>Status</label>
+          <div class="note" id="stat" style="padding:0"></div>
+          <button class="btn ghost small" id="fixNow">Try to fix it now</button>
+        </div>
+        <div class="pad">
+          <label>Account</label>
+          <div class="note" id="setWho" style="padding:0 0 6px">Not signed in.</div>
+          <div class="row">
+            <button class="btn ghost small" id="showLogin">Change account</button>
+            <button class="btn ghost small" id="xOut">Sign out</button>
+          </div>
+        </div>
+        <div class="pad">
+          <label>PIN for this screen</label>
+          <input id="pinNew" type="text" inputmode="numeric" placeholder="4 digits">
+          <button class="btn ghost small" id="savePin">Save PIN</button>
+          <button class="btn ghost small" id="lockNow">Lock now</button>
+        </div>
+        <div class="pad">
+          <label>Stream format</label>
+          <select id="fmt">
+            <option value="m3u8">m3u8, works in the car browser</option>
+            <option value="ts">ts, only if your provider needs it</option>
+          </select>
+          <label style="margin-top:12px">Proxy for lists</label>
+          <input id="proxy" type="text" placeholder="/proxy?k=2692&amp;url=">
+          <label style="margin-top:12px">Proxy for video, empty reuses the one above</label>
+          <input id="vproxy" type="text" placeholder="https://your-worker.workers.dev/?k=2692&amp;url=">
+          <label style="margin-top:12px">Send video through the proxy</label>
+          <select id="proxyStream">
+            <option value="1">Yes</option>
+            <option value="0">No</option>
+          </select>
+          <div class="row">
+            <button class="btn ghost" id="saveSet">Save settings</button>
+            <button class="btn ghost" id="checkProxy">Check proxy</button>
+          </div>
+        </div>
+        <div class="pad">
+          <label>Backup, keep this text safe</label>
+          <textarea id="backup"></textarea>
+          <div class="row">
+            <button class="btn ghost small" id="doExport">Export</button>
+            <button class="btn ghost small" id="doImport">Import</button>
+          </div>
+          <button class="btn" id="wipe" style="background:#3a1a14">Clear everything</button>
+        </div>
+        <div class="note">
+          Your login lives in this browser only, never in the file, so anyone opening the site
+          gets the PIN screen and an empty login. Clear everything wipes it.
+        </div>
+      </div>
+
+    </div>
+
+    <div class="stage">
+      <div class="screen" id="screen">
+        <video id="player" controls playsinline webkit-playsinline style="display:none"></video>
+        <iframe id="frame" allow="autoplay; encrypted-media; fullscreen" allowfullscreen style="display:none"></iframe>
+        <div class="earbadge" id="earbadge">Sound only</div>
+        <div class="idle" id="idle">
+          <svg viewBox="0 0 64 64">
+            <path d="M8 40 L14 26 Q16 22 20 22 L44 22 Q48 22 50 26 L56 40 Z" fill="none" stroke="#e0b25c" stroke-width="2.5" stroke-linejoin="round"/>
+            <circle cx="20" cy="44" r="5" fill="none" stroke="#e0b25c" stroke-width="2.5"/>
+            <circle cx="44" cy="44" r="5" fill="none" stroke="#e0b25c" stroke-width="2.5"/>
+            <path d="M26 33 h12" stroke="#d8492b" stroke-width="2.5" stroke-linecap="round"/>
+          </svg>
+          <h1>Drive Screen</h1>
+          <p>Pick a channel on the left.</p>
+        </div>
+      </div>
+      <div class="bar">
+        <div class="now" id="now">Nothing playing</div>
+        <button class="mini" id="earOnly">Sound only</button>
+        <button class="mini" id="hideSide">Full screen</button>
+        <button class="mini" id="reload">Reload</button>
+        <button class="mini warn" id="stop">Stop</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  var K = {
+    acct:"ds_acct", xtream:"ds_l_xtream", free:"ds_l_free",
+    fav:"ds_fav", yt:"ds_yt", cfg:"ds_cfg", open:"ds_open"
+  };
+  var FREE_BASE = "https://iptv-org.github.io/iptv/";
+  var DEF_HOST = "";
+
+  function $(id){ return document.getElementById(id); }
+  function get(k,d){ try{ var v=localStorage.getItem(k); return v?JSON.parse(v):d; }catch(e){ return d; } }
+  function set(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} }
+  function trim(s){ return String(s==null?"":s).replace(/^\s+|\s+$/g,""); }
+  function esc(s){ return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+  function say(t){
+    var m=$("msg"); m.innerHTML=t||""; m.className=t?"msg on":"msg";
+    if(t){ if(say.t) clearTimeout(say.t); say.t=setTimeout(function(){ m.className="msg"; },9000); }
+  }
+
+  var acct = get(K.acct, { host:DEF_HOST, user:"", pass:"", info:null });
+  var cfg  = get(K.cfg, { fmt:"m3u8", proxy:"", vproxy:"", proxyStream:1, pin:"2692" });
+  if(!cfg.pin) cfg.pin = "2692";
+  var lists = { xtream:get(K.xtream,[]), free:get(K.free,[]) };
+  var favs = get(K.fav,[]);
+  var yts  = get(K.yt,[]);
+  var src = "xtream";
+  var group = "";
+  var onlyFav = false, onlyOk = true, earOnly = false;
+  var hls = null, current = "", typedHost = "";
+  var PAGE_HTTPS = (location.protocol === "https:");
+
+  /* ---------- gate ---------- */
+  var typed = "";
+  function paint(){
+    var d = "";
+    for(var i=0;i<typed.length;i++){ d += "\u25cf"; }
+    $("dots").innerHTML = d;
+  }
+  function unlock(){
+    $("gate").className = "gate off";
+    set(K.open, 1);
+    $("gerr").innerHTML = "";
+    typed = ""; paint();
+  }
+  function lock(){
+    set(K.open, 0);
+    typed = ""; paint();
+    $("gate").className = "gate";
+  }
+  $("keys").onclick = function(e){
+    var t = e.target || e.srcElement;
+    if(t === this) return;
+    var k = t.getAttribute("data-k");
+    if(k === "c"){ typed = ""; paint(); $("gerr").innerHTML=""; return; }
+    if(k === "ok"){
+      if(typed === String(cfg.pin)) unlock();
+      else { $("gerr").innerHTML = "Wrong PIN."; typed=""; paint(); }
+      return;
+    }
+    if(typed.length < 8){ typed += trim(t.innerHTML); paint(); }
+  };
+  if(get(K.open,0) === 1) $("gate").className = "gate off";
+
+  /* ---------- clock ---------- */
+  function tick(){
+    var d=new Date(),h=d.getHours(),m=d.getMinutes();
+    $("clock").innerHTML=(h<10?"0":"")+h+":"+(m<10?"0":"")+m;
+  }
+  tick(); setInterval(tick,20000);
+
+  /* ---------- tabs ---------- */
+  var tabs=document.getElementsByClassName("tab");
+  function openTabIndex(n){
+    for(var j=0;j<tabs.length;j++){ tabs[j].className="tab"; }
+    tabs[n].className="tab on";
+    var p=document.getElementsByClassName("pane");
+    for(var k=0;k<p.length;k++){ p[k].className="pane"; }
+    $("pane-"+tabs[n].getAttribute("data-tab")).className="pane on";
+  }
+  for(var i=0;i<tabs.length;i++){
+    (function(n){ tabs[n].onclick=function(){ openTabIndex(n); }; })(i);
+  }
+  $("cog").onclick=function(){ openTabIndex(3); };
+
+  /* ---------- net ---------- */
+  function viaProxy(url, forVideo){
+    var pre = forVideo ? (trim(cfg.vproxy)||cfg.proxy) : cfg.proxy;
+    if(!pre) return url;
+    return pre + encodeURIComponent(url);
+  }
+  function mixedBlocked(url){
+    return PAGE_HTTPS && String(url).indexOf("http://")===0 && !cfg.proxy;
+  }
+  function fetchText(url, done, fail){
+    if(mixedBlocked(url)){ fail("mixed"); return; }
+    var x=new XMLHttpRequest();
+    try{ x.open("GET", viaProxy(url), true); }catch(e){ fail("blocked"); return; }
+    x.timeout=25000;
+    x.onreadystatechange=function(){
+      if(x.readyState!==4) return;
+      if(x.status>=200 && x.status<400 && x.responseText) done(x.responseText);
+      else fail(x.status?("status "+x.status):"no answer");
+    };
+    try{ x.send(); }catch(e){ fail("blocked"); }
+  }
+
+  /* ---------- m3u ---------- */
+  function parseM3U(text){
+    var lines=String(text).split(/\r?\n/), out=[], p=null;
+    var link=/^[a-z][a-z0-9+.\-]*:\/\//i;
+    for(var i=0;i<lines.length;i++){
+      var line=trim(lines[i]);
+      if(!line) continue;
+      if(line.indexOf("#EXTINF")===0){
+        var nm=trim(line.substring(line.lastIndexOf(",")+1));
+        var g=line.match(/group-title="([^"]*)"/i);
+        p={ name:nm||"Channel", group:g?g[1]:"Other" };
+      } else if(line.charAt(0)!=="#"){
+        if(!link.test(line)) continue;
+        if(!p) p={ name:(line.split("/").pop()||"Channel"), group:"Other" };
+        p.url=line; out.push(p); p=null;
+      }
+    }
+    return out;
+  }
+
+  /* ---------- service ---------- */
+  function baseUrl(){
+    var h=trim(acct.host).replace(/\/+$/,"");
+    if(!h) return "";
+    if(h.charAt(0)==="/") return location.origin + h;
+    if(h.indexOf("http")!==0) h="http://"+h;
+    return h;
+  }
+  function api(action){
+    return baseUrl()+"/player_api.php?username="+encodeURIComponent(acct.user)+
+           "&password="+encodeURIComponent(acct.pass)+(action?("&action="+action):"");
+  }
+  function streamUrl(id, kind, ext){
+    var b=baseUrl()+"/"+(kind||"live")+"/"+encodeURIComponent(acct.user)+"/"+encodeURIComponent(acct.pass)+"/"+id;
+    if(kind==="movie") return b+"."+(ext||"mp4");
+    return b+"."+(cfg.fmt==="ts"?"ts":"m3u8");
+  }
+  function jparse(t){ try{ return JSON.parse(t); }catch(e){ return null; } }
+
+  function signedIn(){ return !!(acct.info && acct.info.user_info && lists.xtream.length); }
+
+  // the real http base, used to build links the edge proxy can rewrite
+  function realBase(){
+    var h = trim(acct.realhost || acct.host).replace(/\/+$/,"");
+    if(!h || h.charAt(0)==="/") return "";
+    if(h.indexOf("http")!==0) h="http://"+h;
+    return h;
+  }
+  function realStream(id, kind, ext){
+    var rb = realBase();
+    if(!rb) return "";
+    var b = rb+"/"+(kind||"live")+"/"+encodeURIComponent(acct.user)+"/"+encodeURIComponent(acct.pass)+"/"+id;
+    if(kind==="movie") return b+"."+(ext||"mp4");
+    return b+"."+(cfg.fmt==="ts"?"ts":"m3u8");
+  }
+
+  function showAcct(){
+    var line = "Not signed in yet";
+    if(acct.info && acct.info.user_info){
+      var u=acct.info.user_info, ex="";
+      if(u.exp_date){
+        var d=new Date(u.exp_date*1000);
+        ex=", good until "+d.getDate()+"/"+(d.getMonth()+1)+"/"+d.getFullYear();
+      }
+      line = "Signed in as <b>"+esc(u.username||acct.user)+"</b>"+esc(ex);
+    }
+    $("who").innerHTML = line + '<span class="cog" id="cog2">&#9881;</span>';
+    var c=$("cog2"); if(c) c.onclick=function(){ openTabIndex(3); };
+    $("setWho").innerHTML = line;
+    $("loginBox").style.display = signedIn() ? "none" : "block";
+  }
+
+  function sitePath(){ return String(typedHost||acct.host||"").charAt(0)==="/"; }
+
+  function readLink(){
+    var raw = trim($("xHost").value);
+    if(raw.indexOf("username=")<0 && raw.indexOf("get.php")<0) return false;
+    var h = raw.match(/^(https?:\/\/[^\/\s]+)/i);
+    var u = raw.match(/[?&]username=([^&\s]+)/i);
+    var p = raw.match(/[?&]password=([^&\s]+)/i);
+    if(h) $("xHost").value = h[1];
+    if(u) $("xUser").value = decodeURIComponent(u[1]);
+    if(p) $("xPass").value = decodeURIComponent(p[1]);
+    if(h||u||p){ say("Read the address and the login out of that link."); return true; }
+    return false;
+  }
+
+  var STUCK = "Blocked before it left the car. This page is on https and the service is on plain http, "+
+              "and browsers refuse to mix the two. Set the proxy up in Setup.";
+
+  function probeProxy(){
+    var x=new XMLHttpRequest();
+    try{ x.open("GET", location.origin+"/proxy", true); }catch(e){ say(STUCK); return; }
+    x.timeout=12000;
+    x.onreadystatechange=function(){
+      if(x.readyState!==4) return;
+      var body=x.responseText||"";
+      if(x.status>=200 && x.status<400 && body.indexOf("proxy is running")>-1){
+        cfg.proxy="/proxy?k="+cfg.pin+"&url="; set(K.cfg,cfg); $("proxy").value=cfg.proxy;
+        say("Found the proxy on this site. Turning it on and signing in again.");
+        acct.host=typedHost; set(K.acct,acct); xLoad(2);
+      } else say(STUCK);
+    };
+    try{ x.send(); }catch(e){ say(STUCK); }
+  }
+
+  function loadLive(map){
+    fetchText(api("get_live_streams"), function(t){
+      var arr=jparse(t);
+      if(!arr||!arr.length){ say("Signed in, but no channels came back."); return; }
+      var out=[];
+      for(var i=0;i<arr.length;i++){
+        var s=arr[i];
+        if(!s||!s.stream_id) continue;
+        out.push({ name:s.name||("Channel "+s.stream_id), group:map[s.category_id]||"Live", url:streamUrl(s.stream_id,"live"), sid:s.stream_id, kind:"live" });
+      }
+      out.sort(function(a,b){
+        if(a.group===b.group) return a.name>b.name?1:-1;
+        return a.group>b.group?1:-1;
+      });
+      lists.xtream=out; set(K.xtream,out);
+      src="xtream"; group=""; markSrc(); rail(); draw(); showAcct();
+      say(out.length+" channels loaded."); status();
+    }, function(err){ say("Channel list failed, "+esc(err)+"."); });
+  }
+  function loadCats(){
+    fetchText(api("get_live_categories"), function(t){
+      var cats=jparse(t)||[], map={};
+      for(var i=0;i<cats.length;i++){ map[cats[i].category_id]=cats[i].category_name; }
+      loadLive(map);
+    }, function(){ loadLive({}); });
+  }
+
+  function xLoad(step){
+    if(step===undefined) step=0;
+    if(step===0){
+      readLink();
+      typedHost = trim($("xHost").value);
+      if(!typedHost){ say("Put the service address in first."); return; }
+      if(typedHost.charAt(0)!=="/" && typedHost.indexOf("http")!==0) typedHost = "http://"+typedHost;
+      $("xHost").value = typedHost;
+      acct.host = typedHost;
+      acct.user = trim($("xUser").value);
+      acct.pass = trim($("xPass").value);
+      if(!acct.user || !acct.pass){ say("Type the username and password."); return; }
+      set(K.acct, acct);
+      if(PAGE_HTTPS && !cfg.proxy && typedHost.indexOf("http://")===0){
+        say("This page is on https, so the app is finding a working route by itself.");
+        routeTry(routes(), 0);
+        return;
+      }
+      say("Signing in.");
+    }
+    fetchText(api(""), function(t){
+      var info=jparse(t);
+      if(!info){
+        acct.host=typedHost; set(K.acct,acct); $("xHost").value=typedHost;
+        if(/^\s*</.test(t)) say("That address gave back a web page, not the service. "+
+          (sitePath()?"The netlify.toml redirect is not live. Check that netlify.toml sits next to index.html and redeploy.":
+                      "Check the address and the port."));
+        else say("The service sent something unreadable.");
+        return;
+      }
+      if(!info.user_info || info.user_info.auth===0){
+        acct.host=typedHost; set(K.acct,acct); $("xHost").value=typedHost;
+        say("The service refused that username or password. They are case sensitive, check capitals.");
+        return;
+      }
+      if(typedHost.charAt(0)!=="/") acct.realhost = typedHost;
+      acct.info=info; set(K.acct,acct); showAcct();
+      loadCats();
+    }, function(err){
+      if(step===0 && !cfg.proxy && typedHost.indexOf("http://")===0 && typedHost.charAt(0)!=="/"){
+        acct.host = typedHost.replace(/^http:/,"https:");
+        say("Plain http was blocked, checking https once.");
+        xLoad(1); return;
+      }
+      acct.host=typedHost; set(K.acct,acct); $("xHost").value=typedHost;
+      if(sitePath()){
+        if(err==="status 404") say("Nothing is redirecting at "+esc(typedHost)+
+          ". netlify.toml did not deploy, or it is not next to index.html. Press Test in a tab to see it for yourself.");
+        else say("The redirect at "+esc(typedHost)+" answered with "+esc(err)+
+          ". Your provider refused Netlify, or the host inside netlify.toml is wrong.");
+        return;
+      }
+      if(step<2 && !cfg.proxy && PAGE_HTTPS){ probeProxy(); return; }
+      if(cfg.proxy) say("The proxy answered but the service did not, "+esc(err)+".");
+      else if(err==="mixed" || PAGE_HTTPS) say(STUCK);
+      else say("Could not reach the service, "+esc(err)+".");
+    });
+  }
+
+  function loadMovies(){
+    if(!acct.user){ say("Sign in first."); return; }
+    say("Loading movies.");
+    fetchText(api("get_vod_categories"), function(t){
+      var cats=jparse(t)||[], map={};
+      for(var i=0;i<cats.length;i++){ map[cats[i].category_id]=cats[i].category_name; }
+      fetchText(api("get_vod_streams"), function(t2){
+        var arr=jparse(t2)||[], out=lists.xtream.slice(0);
+        for(var i=0;i<arr.length;i++){
+          var s=arr[i];
+          if(!s||!s.stream_id) continue;
+          out.push({ name:s.name||("Movie "+s.stream_id), group:"Movies, "+(map[s.category_id]||"All"), url:streamUrl(s.stream_id,"movie",s.container_extension), sid:s.stream_id, kind:"movie", ext:s.container_extension });
+        }
+        lists.xtream=out; set(K.xtream,out);
+        rail(); draw();
+        say(arr.length+" movies added.");
+      }, function(err){ say("Movie list failed, "+esc(err)+"."); });
+    }, function(err){ say("Movie list failed, "+esc(err)+"."); });
+  }
+
+  var PORTS = [80,8080,8000,8880,2082,2086,2095,2052,25461,8081,2087,2029,443,2083,2096];
+  function portTry(i){
+    if(i>=PORTS.length){ say("No usual port answered. Ask the provider for the exact portal address."); return; }
+    var port=PORTS[i], secure=(port===443||port===2083||port===2096);
+    var host=trim($("xHost").value).replace(/^https?:\/\//,"").replace(/:\d+$/,"").replace(/\/.*$/,"");
+    var guess=(secure?"https://":"http://")+host+(port===443?"":(":"+port));
+    say("Trying port "+port+", "+(i+1)+" of "+PORTS.length+".");
+    fetchText(guess+"/player_api.php?username="+encodeURIComponent(trim($("xUser").value))+
+              "&password="+encodeURIComponent(trim($("xPass").value)), function(t){
+      var info=jparse(t);
+      if(info&&info.user_info&&info.user_info.auth!==0){
+        acct.host=guess; typedHost=guess; set(K.acct,acct); $("xHost").value=guess;
+        say("Port "+port+" answered. Signing in.");
+        xLoad(2);
+      } else portTry(i+1);
+    }, function(){ portTry(i+1); });
+  }
+
+  function routes(){
+    var raw = trim($("xHost").value);
+    if(raw.charAt(0)==="/") raw = "";
+    if(raw && raw.indexOf("http")!==0) raw = "http://"+raw;
+    var R = [];
+    R.push({ how:"through this site at /svc", host:"/svc", proxy:"" });
+    var PP = ["/p80","/p8080","/p8000","/p8880","/p2082","/p2086","/p2095","/p25461","/p443"];
+    for(var q=0;q<PP.length;q++){
+      R.push({ how:"through this site at "+PP[q], host:PP[q], proxy:"" });
+    }
+    if(raw){
+      R.push({ how:"through the site proxy at /proxy", host:raw, proxy:"/proxy?k="+cfg.pin+"&url=" });
+      if(cfg.vproxy) R.push({ how:"through the video proxy", host:raw, proxy:trim(cfg.vproxy) });
+      R.push({ how:"straight to the service", host:raw, proxy:"" });
+      R.push({ how:"straight to the service on https", host:raw.replace(/^http:/,"https:"), proxy:"" });
+    }
+    return R;
+  }
+
+  function routeTry(R, i){
+    var raw = trim($("xHost").value); if(raw.charAt(0)==="/") raw = trim(acct.realhost||"");
+    if(raw && raw.indexOf("http")!==0) raw = "http://"+raw;
+    if(i>=R.length){
+      say("Every route failed, including Netlify dialling nine different ports on that host from its own servers. "+
+          "That host is not answering anyone but your app. Ask your provider for your m3u link, paste the whole "+
+          "line into the address field, and this will finish itself.");
+      return;
+    }
+    var r = R[i];
+    say("Route "+(i+1)+" of "+R.length+", "+esc(r.how)+".");
+    var keep = cfg.proxy;
+    cfg.proxy = r.proxy;
+    acct.host = r.host;
+    var url = api("");
+    cfg.proxy = keep;
+    var x = new XMLHttpRequest();
+    var target = r.proxy ? (r.proxy + encodeURIComponent(url)) : url;
+    if(PAGE_HTTPS && String(target).indexOf("http://")===0){ routeTry(R,i+1); return; }
+    try{ x.open("GET", target, true); }catch(e){ routeTry(R,i+1); return; }
+    x.timeout = 15000;
+    x.onreadystatechange = function(){
+      if(x.readyState!==4) return;
+      var info = null;
+      if(x.status>=200 && x.status<400) info = jparse(x.responseText||"");
+      if(info && info.user_info && info.user_info.auth!==0){
+        cfg.proxy = r.proxy; cfg.vproxy = cfg.vproxy || r.proxy;
+        set(K.cfg, cfg);
+        acct.host = r.host; typedHost = r.host;
+        acct.realhost = (r.host.charAt(0)==="/") ? (raw||acct.realhost||"") : r.host;
+        set(K.acct, acct);
+        $("xHost").value = r.host; $("proxy").value = cfg.proxy; fillFields();
+        say("Winner, "+esc(r.how)+". Saved and signing in.");
+        xLoad(2);
+      } else { routeTry(R, i+1); }
+    };
+    try{ x.send(); }catch(e){ routeTry(R,i+1); }
+  }
+
+  $("xRoutes").onclick=function(){
+    readLink();
+    acct.user=trim($("xUser").value); acct.pass=trim($("xPass").value);
+    if(!acct.user||!acct.pass){ say("Fill the username and password first."); return; }
+    routeTry(routes(), 0);
+  };
+
+  $("xLogin").onclick=function(){ xLoad(0); };
+  $("xMovies").onclick=loadMovies;
+  $("xTest").onclick=function(){
+    readLink();
+    acct.host=trim($("xHost").value); acct.user=trim($("xUser").value); acct.pass=trim($("xPass").value);
+    if(!acct.user||!acct.pass){ say("Fill the username and password first."); return; }
+    set(K.acct,acct); openSite(api(""));
+  };
+  $("xPorts").onclick=function(){
+    readLink();
+    if(!trim($("xUser").value)||!trim($("xPass").value)){ say("Fill the username and password first."); return; }
+    if(PAGE_HTTPS && !cfg.proxy){ say("This page is on https. Set the proxy up first, then press this again."); return; }
+    acct.user=trim($("xUser").value); acct.pass=trim($("xPass").value);
+    portTry(0);
+  };
+  $("xCopy").onclick=function(){
+    readLink();
+    acct.host=trim($("xHost").value); acct.user=trim($("xUser").value); acct.pass=trim($("xPass").value);
+    say("Exact link the app uses:<br><br>"+esc(api("")));
+  };
+  $("showLogin").onclick=function(){
+    $("loginBox").style.display="block"; openTabIndex(0);
+    say("Account fields are open. They hide again once you sign in.");
+  };
+  $("xOut").onclick=function(){
+    acct={ host:acct.host, user:"", pass:"", info:null };
+    lists.xtream=[]; set(K.acct,acct); set(K.xtream,[]);
+    $("xUser").value=""; $("xPass").value="";
+    showAcct(); rail(); draw(); openTabIndex(0);
+    say("Signed out and channels removed."); status();
+  };
+
+  /* ---------- free lists ---------- */
+  var freeBtns=document.querySelectorAll("[data-free]");
+  for(var f=0;f<freeBtns.length;f++){
+    freeBtns[f].onclick=function(){
+      var path=this.getAttribute("data-free"), label=this.innerHTML;
+      say("Loading "+esc(label)+".");
+      fetchText(FREE_BASE+path+".m3u", function(t){
+        var arr=parseM3U(t);
+        if(!arr.length){ say("That list came back empty."); return; }
+        arr.sort(function(a,b){
+          if(a.group===b.group) return a.name>b.name?1:-1;
+          return a.group>b.group?1:-1;
+        });
+        lists.free=arr; set(K.free,arr);
+        src="free"; group=""; markSrc(); rail(); draw(); openTabIndex(0);
+        var okc=playable(arr);
+        say(arr.length+" free channels, "+okc+" play here as it is.");
+      }, function(err){ say("Could not download that list, "+esc(err)+"."); });
+    };
+  }
+
+  /* ---------- list ---------- */
+  var srcBtns=document.querySelectorAll(".src div");
+  function markSrc(){
+    for(var i=0;i<srcBtns.length;i++){
+      srcBtns[i].className = srcBtns[i].getAttribute("data-src")===src ? "on" : "";
+    }
+  }
+  for(var s=0;s<srcBtns.length;s++){
+    srcBtns[s].onclick=function(){ src=this.getAttribute("data-src"); group=""; markSrc(); rail(); draw(); };
+  }
+
+  function active(){ return lists[src]||[]; }
+  function canPlay(u){
+    if(!PAGE_HTTPS) return true;
+    if(String(u).indexOf("http://")!==0) return true;
+    return (cfg.proxy||cfg.vproxy) && cfg.proxyStream*1===1;
+  }
+  function playable(arr){
+    var n=0;
+    for(var i=0;i<arr.length;i++){ if(arr[i]&&arr[i].url&&canPlay(arr[i].url)) n++; }
+    return n;
+  }
+  function isFav(u){ for(var i=0;i<favs.length;i++){ if(favs[i]==u) return true; } return false; }
+
+  function rail(){
+    var arr=active(), seen={}, g=[], i;
+    for(i=0;i<arr.length;i++){
+      var n=(arr[i]&&arr[i].group)||"Other";
+      if(!seen[n]){ seen[n]=0; g.push(n); }
+      seen[n]++;
+    }
+    g.sort();
+    var h='<div class="chip'+(group===""?" on":"")+'" data-g="">All<i>'+arr.length+"</i></div>"+
+          '<div class="chip'+(group==="\u2605"?" on":"")+'" data-g="\u2605">Favorites<i>'+favs.length+"</i></div>";
+    for(i=0;i<g.length;i++){
+      h+='<div class="chip'+(group===g[i]?" on":"")+'" data-g="'+esc(g[i])+'">'+esc(g[i])+"<i>"+seen[g[i]]+"</i></div>";
+    }
+    $("rail").innerHTML=h;
+  }
+  $("rail").onclick=function(e){
+    var t=e.target||e.srcElement;
+    while(t&&t!==this&&!(t.getAttribute&&t.getAttribute("data-g")!==null&&t.className.indexOf("chip")>-1)){ t=t.parentNode; }
+    if(t&&t!==this&&t.getAttribute){
+      group=t.getAttribute("data-g")||"";
+      onlyFav = (group==="\u2605");
+      rail(); draw();
+    }
+  };
+
+  function draw(){
+    var arr=active(), q=$("search").value.toLowerCase(), h="", n=0;
+    for(var i=0;i<arr.length && n<500;i++){
+      var c=arr[i];
+      if(!c||!c.url) continue;
+      if(group && group!=="\u2605" && (c.group||"Other")!=group) continue;
+      if(q && String(c.name||"").toLowerCase().indexOf(q)<0) continue;
+      if(onlyFav && !isFav(c.url)) continue;
+      var fine=canPlay(c.url);
+      if(onlyOk && !fine) continue;
+      n++;
+      h+='<div class="item'+(current==c.url?" on":"")+'" data-i="'+i+'">'+
+           '<div><div class="nm">'+esc(c.name||"Channel")+"</div>"+
+           '<div class="gp">'+esc(c.group||"Other")+(fine?"":", needs the proxy")+"</div></div>"+
+           '<div class="star'+(isFav(c.url)?" on":"")+'" data-fav="'+i+'">&#9733;</div>'+
+         "</div>";
+    }
+    if(!n){
+      h='<div class="empty">'+(arr.length?
+        (onlyOk&&playable(arr)===0?"Every channel here runs on plain http and this page is on https, so none can play. Set the proxy up in Setup.":"Nothing matches."):
+        (src==="xtream"?"Sign in to load your channels.":"Open the Arabic tab and pick a list."))+"</div>";
+    } else if(n>=500){ h+='<div class="empty">First 500 shown. Use a group or search.</div>'; }
+    $("chList").innerHTML=h;
+  }
+
+  $("chList").onclick=function(e){
+    var t=e.target||e.srcElement, arr=active();
+    var fv=t.getAttribute&&t.getAttribute("data-fav");
+    if(fv!=null){
+      var row=arr[fv*1]; if(!row) return;
+      var u=row.url, keep=[];
+      if(isFav(u)){ for(var i=0;i<favs.length;i++){ if(favs[i]!=u) keep.push(favs[i]); } favs=keep; }
+      else favs.push(u);
+      set(K.fav,favs); rail(); draw(); return;
+    }
+    while(t&&t!==this&&!(t.getAttribute&&t.getAttribute("data-i"))){ t=t.parentNode; }
+    if(t&&t.getAttribute&&t.getAttribute("data-i")){
+      var c=arr[t.getAttribute("data-i")*1];
+      if(c){ play(c.url, c.name, c.sid?realStream(c.sid,c.kind,c.ext):""); draw(); }
+    }
+  };
+  $("search").onkeyup=draw; $("search").onsearch=draw;
+
+  /* ---------- youtube ---------- */
+  function drawYt(){
+    var h="";
+    for(var k=0;k<yts.length;k++){ h+='<div class="item" data-y="'+k+'"><div class="nm">'+esc(yts[k].name)+"</div></div>"; }
+    $("ytList").innerHTML=h||'<div class="empty">Videos you play get saved here.</div>';
+  }
+  $("ytList").onclick=function(e){
+    var t=e.target||e.srcElement;
+    while(t&&t!==this&&!(t.getAttribute&&t.getAttribute("data-y"))){ t=t.parentNode; }
+    if(t&&t.getAttribute&&t.getAttribute("data-y")){ var y=yts[t.getAttribute("data-y")*1]; if(y) playYouTube(y.id,y.name); }
+  };
+  function ytId(s){
+    s=trim(s);
+    var m=s.match(/[?&]v=([A-Za-z0-9_\-]{6,})/); if(m) return m[1];
+    m=s.match(/youtu\.be\/([A-Za-z0-9_\-]{6,})/); if(m) return m[1];
+    m=s.match(/\/(embed|live|shorts|v)\/([A-Za-z0-9_\-]{6,})/); if(m) return m[2];
+    if(/^[A-Za-z0-9_\-]{8,}$/.test(s)) return s;
+    return "";
+  }
+  function openSite(url){
+    var w=null;
+    try{ w=window.open(url,"_blank"); }catch(e){}
+    if(!w){ try{ window.location.href=url; }catch(e2){} }
+  }
+  $("doSearch").onclick=function(){
+    openSite("https://m.youtube.com/results?search_query="+encodeURIComponent(trim($("ytSearch").value)));
+  };
+  $("ytSearch").onkeydown=function(e){ if((e.keyCode||e.which)===13) $("doSearch").onclick(); };
+  $("ytHome").onclick=function(){ openSite("https://m.youtube.com/"); };
+  $("ytSubs").onclick=function(){ openSite("https://m.youtube.com/feed/subscriptions"); };
+  $("ytSignin").onclick=function(){ openSite("https://accounts.google.com/ServiceLogin?service=youtube"); };
+  $("playYt").onclick=function(){
+    var id=ytId($("ytUrl").value);
+    if(!id){ say("Paste a YouTube link."); return; }
+    var out=[{ name:"YouTube "+id, url:id, id:id }];
+    for(var i=0;i<yts.length&&out.length<30;i++){ if(yts[i].url!=id) out.push(yts[i]); }
+    yts=out; set(K.yt,yts); drawYt(); playYouTube(id,"YouTube "+id);
+  };
+
+  /* ---------- player ---------- */
+  function stopAll(){
+    var v=$("player");
+    try{ v.pause(); }catch(e){}
+    if(hls){ try{ hls.destroy(); }catch(e){} hls=null; }
+    v.removeAttribute("src");
+    try{ v.load(); }catch(e){}
+    v.style.display="none";
+    var f=$("frame"); f.src="about:blank"; f.style.display="none";
+    $("idle").style.display="flex";
+  }
+  function playYouTube(id,name){
+    stopAll(); $("idle").style.display="none";
+    var f=$("frame"); f.style.display="block";
+    f.src="https://www.youtube.com/embed/"+id+"?autoplay=1&playsinline=1&rel=0";
+    $("now").innerHTML="<b>YouTube</b> "+esc(name||id);
+    current="yt-"+id;
+  }
+  function play(url,name){
+    if(!url) return;
+    if(url.indexOf("youtube.com")>-1||url.indexOf("youtu.be")>-1){
+      var id=ytId(url); if(id){ playYouTube(id,name); return; }
+    }
+    stopAll(); $("idle").style.display="none";
+    var v=$("player"); v.style.display="block";
+    v.className = earOnly ? "hidepic" : "";
+    current=url; $("now").innerHTML="<b>"+esc(name||"Playing")+"</b>";
+    var low=url.toLowerCase(), feed=url;
+    var sitePathUrl = (url.indexOf(location.origin+"/")===0) &&
+                      (url.indexOf("/svc/")>-1 || /\/p\d+\//.test(url));
+    if(sitePathUrl && arguments.length>2 && arguments[2]){
+      // rebuild the absolute service link and send it through the rewriting proxy
+      var abs = arguments[2];
+      if(cfg.vproxy) feed = trim(cfg.vproxy)+encodeURIComponent(abs);
+      else feed = location.origin+"/proxy?k="+cfg.pin+"&url="+encodeURIComponent(abs);
+    } else if((cfg.proxy||cfg.vproxy) && cfg.proxyStream*1===1 && url.indexOf("http://")===0){
+      feed=viaProxy(url,true);
+    } else if(mixedBlocked(url)){
+      say("This channel is on plain http and the page is on https. Set the proxy up in Setup.");
+    }
+    var isHls = low.indexOf(".m3u8")>-1 || low.indexOf("/live/")>-1;
+    if(isHls && window.Hls && window.Hls.isSupported()){
+      hls=new window.Hls({ enableWorker:false, maxBufferLength:20, manifestLoadingTimeOut:20000 });
+      hls.loadSource(feed); hls.attachMedia(v);
+      hls.on(window.Hls.Events.MANIFEST_PARSED,function(){ try{ v.play(); }catch(e){} });
+      hls.on(window.Hls.Events.ERROR,function(evt,data){
+        if(data&&data.fatal){
+          if(data.type===window.Hls.ErrorTypes.NETWORK_ERROR){ try{ hls.startLoad(); }catch(e){} }
+          else if(data.type===window.Hls.ErrorTypes.MEDIA_ERROR){ try{ hls.recoverMediaError(); }catch(e){} }
+          else say("That channel did not open. Off air, busy on another screen, or blocked for browsers.");
+        }
+      });
+    } else { v.src=feed; try{ v.play(); }catch(e){} }
+    v.onerror=function(){ videoFailed(url); };
+    if(hls){
+      hls.on(window.Hls.Events.ERROR, function(evt,data){
+        if(data && data.fatal && data.type===window.Hls.ErrorTypes.NETWORK_ERROR){ videoFailed(url); }
+      });
+    }
+  }
+  var warnedVideo = false;
+  function videoFailed(url){
+    if(warnedVideo) return;
+    var site = (String(url).indexOf(location.origin+"/")===0);
+    if(!site){ say("That channel did not open."); return; }
+    warnedVideo = true;
+    var x=new XMLHttpRequest();
+    try{ x.open("GET", location.origin+"/proxy", true); }catch(e){ say("That channel did not open."); return; }
+    x.timeout=10000;
+    x.onreadystatechange=function(){
+      if(x.readyState!==4) return;
+      var live = x.status>=200 && x.status<400 && (x.responseText||"").indexOf("proxy is running")>-1;
+      if(live){
+        say("The channel list loads, but the video pieces come on plain http and need rewriting. "+
+            "The rewriting proxy is deployed, so open Setup, press Check proxy once, then play again.");
+      } else {
+        say("The channel list loads through the redirect, but the video needs the rewriting proxy at /proxy, "+
+            "which did not deploy. Connect the site to Netlify through GitHub so the edge function ships, "+
+            "then play again. A drag deploy skips it.");
+      }
+    };
+    try{ x.send(); }catch(e){ say("That channel did not open."); }
+  }
+
+  $("stop").onclick=function(){ stopAll(); current=""; $("now").innerHTML="Nothing playing"; draw(); };
+  $("reload").onclick=function(){
+    if(!current) return;
+    if(current.indexOf("yt-")===0) playYouTube(current.substring(3),"");
+    else play(current,$("now").innerHTML.replace(/<[^>]*>/g,""));
+  };
+  $("earOnly").onclick=function(){
+    earOnly=!earOnly;
+    $("player").className = earOnly ? "hidepic" : "";
+    $("earbadge").className = earOnly ? "earbadge on" : "earbadge";
+    this.className = earOnly ? "mini act" : "mini";
+  };
+
+  /* ---------- full screen ---------- */
+  function isFull(){
+    return !!(document.fullscreenElement||document.webkitFullscreenElement||
+              document.mozFullScreenElement||document.msFullscreenElement);
+  }
+  function askFull(){
+    var el=document.documentElement;
+    var f=el.requestFullscreen||el.webkitRequestFullscreen||el.webkitRequestFullScreen||
+          el.mozRequestFullScreen||el.msRequestFullscreen;
+    if(f){ try{ f.call(el); }catch(e){} }
+  }
+  function dropFull(){
+    var f=document.exitFullscreen||document.webkitExitFullscreen||document.webkitCancelFullScreen||
+          document.mozCancelFullScreen||document.msExitFullscreen;
+    if(f){ try{ f.call(document); }catch(e){} }
+  }
+  function paintFull(on){
+    document.body.className = on ? "full" : "";
+    $("hideSide").innerHTML = on ? "Exit full" : "Full screen";
+  }
+  $("hideSide").onclick=function(){
+    if(document.body.className==="full"){ dropFull(); paintFull(false); }
+    else { askFull(); paintFull(true); }
+  };
+  function watchFull(){ if(!isFull() && document.body.className==="full") paintFull(false); }
+  document.addEventListener("fullscreenchange",watchFull,false);
+  document.addEventListener("webkitfullscreenchange",watchFull,false);
+  document.addEventListener("mozfullscreenchange",watchFull,false);
+
+  /* ---------- setup ---------- */
+  $("saveSet").onclick=function(){
+    cfg.fmt=$("fmt").value; cfg.proxy=trim($("proxy").value);
+    cfg.vproxy=trim($("vproxy").value); cfg.proxyStream=$("proxyStream").value*1;
+    set(K.cfg,cfg); rail(); draw(); say("Settings saved."); status();
+  };
+  $("savePin").onclick=function(){
+    var p=trim($("pinNew").value);
+    if(!/^\d{4,8}$/.test(p)){ say("PIN must be 4 to 8 digits."); return; }
+    cfg.pin=p; set(K.cfg,cfg); $("pinNew").value="";
+    say("PIN saved. It is asked for every time the site opens on a new device.");
+  };
+  $("lockNow").onclick=function(){ lock(); };
+  $("checkProxy").onclick=function(){
+    var pre=trim($("proxy").value);
+    if(!pre){ say("Put the proxy address in first."); return; }
+    cfg.proxy=pre; cfg.vproxy=trim($("vproxy").value);
+    cfg.proxyStream=$("proxyStream").value*1; set(K.cfg,cfg);
+    var root=pre.split("?")[0];
+    var x=new XMLHttpRequest();
+    try{ x.open("GET",root,true); }catch(e){ say("That address is not usable."); return; }
+    x.timeout=15000;
+    x.onreadystatechange=function(){
+      if(x.readyState!==4) return;
+      var body=x.responseText||"";
+      if(x.status>=200 && x.status<400 && body.indexOf("proxy is running")>-1){
+        fetchText(FREE_BASE+"languages/ara.m3u", function(t){
+          var n=parseM3U(t).length;
+          say(n? ("Proxy works end to end, pulled "+n+" channels. Sign in now.") : "Proxy answered but sent nothing readable.");
+        }, function(err){ say("Proxy alive but the fetch through it failed, "+esc(err)+"."); });
+      } else if(x.status===404) say("Nothing deployed at "+esc(root)+". Use the Cloudflare worker, or connect the folder through GitHub.");
+      else if(x.status===403) say("Proxy there but the key was rejected. The k value must match the KEY line in the proxy file.");
+      else say("That address answered with "+esc(String(x.status||"nothing"))+", not the proxy.");
+    };
+    try{ x.send(); }catch(e){ say("Could not reach "+esc(root)+"."); }
+  };
+  $("doExport").onclick=function(){
+    $("backup").value=JSON.stringify({ acct:acct, cfg:cfg, lists:lists, fav:favs, yt:yts });
+    say("Copy the text and keep it safe, it holds your login.");
+  };
+  $("doImport").onclick=function(){
+    var d=null; try{ d=JSON.parse($("backup").value); }catch(e){}
+    if(!d){ say("That backup text is not readable."); return; }
+    acct=d.acct||acct; cfg=d.cfg||cfg; if(!cfg.pin) cfg.pin="2692";
+    lists.xtream=(d.lists&&d.lists.xtream)||[]; lists.free=(d.lists&&d.lists.free)||[];
+    favs=d.fav||[]; yts=d.yt||[];
+    set(K.acct,acct); set(K.cfg,cfg); set(K.xtream,lists.xtream); set(K.free,lists.free);
+    set(K.fav,favs); set(K.yt,yts);
+    fillFields(); showAcct(); rail(); draw(); drawYt(); say("Backup restored."); status();
+  };
+  $("wipe").onclick=function(){
+    acct={ host:"", user:"", pass:"", info:null };
+    cfg={ fmt:"m3u8", proxy:"", vproxy:"", proxyStream:1, pin:"2692" };
+    lists={ xtream:[], free:[] }; favs=[]; yts=[];
+    set(K.acct,acct); set(K.cfg,cfg); set(K.xtream,[]); set(K.free,[]);
+    set(K.fav,[]); set(K.yt,[]); set(K.open,0);
+    fillFields(); showAcct(); rail(); draw(); drawYt();
+    say("Everything cleared."); status();
+  };
+
+  function status(){
+    var L=[];
+    L.push("Page: "+(PAGE_HTTPS?"https, so plain http services need the proxy":"plain http, no proxy needed"));
+    L.push("Site: "+esc(location.host||"local file"));
+    L.push("Login saved: "+(acct.user?("yes, "+esc(acct.user)):"no"));
+    L.push("Service address: "+(acct.host?esc(acct.host):"empty")+
+           (String(acct.host).charAt(0)==="/"?" , through this site, no mixing":""));
+    L.push("My channels: "+lists.xtream.length);
+    L.push("Free channels: "+lists.free.length);
+    L.push("Proxy for lists: "+(cfg.proxy?esc(cfg.proxy):"not set"));
+    L.push("Proxy for video: "+(cfg.vproxy?esc(cfg.vproxy):(cfg.proxy?"same as lists":"not set")));
+    L.push("PIN: "+(cfg.pin==="2692"?"2692, the default":"changed"));
+    var el=$("stat");
+    if(el) el.innerHTML = L.join("<br>");
+  }
+
+  function fixNow(){
+    status();
+    if(!acct.user || !acct.pass){ say("No login saved on this site. Open Change account and sign in once."); openTabIndex(0); $("loginBox").style.display="block"; return; }
+    typedHost = acct.host;
+    if(PAGE_HTTPS && !cfg.proxy && !sitePath()){ routeTry(routes(), 0); return; }
+    typedHost = acct.host;
+    say("Signing in again with what is saved.");
+    xLoad(2);
+  }
+
+  function fillFields(){
+    $("xHost").value=acct.host||"";
+    $("xUser").value=acct.user||"";
+    $("xPass").value=acct.pass||"";
+    $("fmt").value=cfg.fmt||"m3u8";
+    $("proxy").value=cfg.proxy||"";
+    $("vproxy").value=cfg.vproxy||"";
+    $("proxyStream").value=String(cfg.proxyStream===0?0:1);
+  }
+
+  $("fixNow").onclick=fixNow;
+  fillFields(); showAcct(); markSrc(); rail(); draw(); drawYt(); paint(); status();
+
+  // self heal, credentials saved but no channels in hand
+  if(acct.user && acct.pass && !lists.xtream.length){
+    typedHost = acct.host;
+    if(PAGE_HTTPS && !cfg.proxy && !sitePath()) routeTry(routes(), 0);
+    else xLoad(2);
+  }
+
+  window.DS={ status:status, fixNow:fixNow, realStream:realStream, realBase:realBase, parseM3U:parseM3U, ytId:ytId, streamUrl:streamUrl, api:api, baseUrl:baseUrl,
+              viaProxy:viaProxy, lock:lock, isFull:isFull };
+})();
+</script>
+</body>
+</html>

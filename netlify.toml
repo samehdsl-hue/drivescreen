@@ -1,0 +1,70 @@
+# Drive Screen, Netlify config
+#
+# /svc is the normal route to your service.
+# The /p... rules exist to find out which port on your provider is actually
+# alive, since Netlify does the dialling from its own servers.
+# If your host is not ismarter.xyz, change it in every line below.
+
+[[redirects]]
+  from = "/svc/*"
+  to = "http://ismarter.xyz:2029/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/p80/*"
+  to = "http://ismarter.xyz/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/p8080/*"
+  to = "http://ismarter.xyz:8080/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/p8000/*"
+  to = "http://ismarter.xyz:8000/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/p8880/*"
+  to = "http://ismarter.xyz:8880/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/p2082/*"
+  to = "http://ismarter.xyz:2082/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/p2086/*"
+  to = "http://ismarter.xyz:2086/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/p2095/*"
+  to = "http://ismarter.xyz:2095/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/p25461/*"
+  to = "http://ismarter.xyz:25461/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/p443/*"
+  to = "https://ismarter.xyz/:splat"
+  status = 200
+  force = true
+
+[[edge_functions]]
+  path = "/proxy"
+  function = "proxy"
