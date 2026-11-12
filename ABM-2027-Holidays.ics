@@ -1,0 +1,98 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//ABM Engineering Northeast//2027 Holidays//EN
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+X-WR-CALNAME:ABM 2027 Holidays
+X-WR-TIMEZONE:America/New_York
+BEGIN:VEVENT
+UID:abm-2027-holiday-1@abm-ne
+DTSTAMP:20261112T120000Z
+DTSTART;VALUE=DATE:20270101
+DTEND;VALUE=DATE:20270102
+SUMMARY:ABM Paid Holiday – New Year's Day
+TRANSP:TRANSPARENT
+DESCRIPTION:ABM 2027 paid holiday. Early release at 2 p.m. the day before\, with People Leader approval.
+END:VEVENT
+BEGIN:VEVENT
+UID:abm-2027-holiday-2@abm-ne
+DTSTAMP:20261112T120000Z
+DTSTART;VALUE=DATE:20270118
+DTEND;VALUE=DATE:20270119
+SUMMARY:ABM Paid Holiday – Martin Luther King Jr. Day
+TRANSP:TRANSPARENT
+DESCRIPTION:ABM 2027 paid holiday. Early release at 2 p.m. the day before\, with People Leader approval.
+END:VEVENT
+BEGIN:VEVENT
+UID:abm-2027-holiday-3@abm-ne
+DTSTAMP:20261112T120000Z
+DTSTART;VALUE=DATE:20270215
+DTEND;VALUE=DATE:20270216
+SUMMARY:ABM Paid Holiday – Presidents' Day
+TRANSP:TRANSPARENT
+DESCRIPTION:ABM 2027 paid holiday. Early release at 2 p.m. the day before\, with People Leader approval.
+END:VEVENT
+BEGIN:VEVENT
+UID:abm-2027-holiday-4@abm-ne
+DTSTAMP:20261112T120000Z
+DTSTART;VALUE=DATE:20270531
+DTEND;VALUE=DATE:20270601
+SUMMARY:ABM Paid Holiday – Memorial Day
+TRANSP:TRANSPARENT
+DESCRIPTION:ABM 2027 paid holiday. Early release at 2 p.m. the day before\, with People Leader approval.
+END:VEVENT
+BEGIN:VEVENT
+UID:abm-2027-holiday-5@abm-ne
+DTSTAMP:20261112T120000Z
+DTSTART;VALUE=DATE:20270705
+DTEND;VALUE=DATE:20270706
+SUMMARY:ABM Paid Holiday – Independence Day (observed)
+TRANSP:TRANSPARENT
+DESCRIPTION:ABM 2027 paid holiday. Early release at 2 p.m. the day before\, with People Leader approval.
+END:VEVENT
+BEGIN:VEVENT
+UID:abm-2027-holiday-6@abm-ne
+DTSTAMP:20261112T120000Z
+DTSTART;VALUE=DATE:20270906
+DTEND;VALUE=DATE:20270907
+SUMMARY:ABM Paid Holiday – Labor Day
+TRANSP:TRANSPARENT
+DESCRIPTION:ABM 2027 paid holiday. Early release at 2 p.m. the day before\, with People Leader approval.
+END:VEVENT
+BEGIN:VEVENT
+UID:abm-2027-holiday-7@abm-ne
+DTSTAMP:20261112T120000Z
+DTSTART;VALUE=DATE:20271125
+DTEND;VALUE=DATE:20271126
+SUMMARY:ABM Paid Holiday – Thanksgiving Day
+TRANSP:TRANSPARENT
+DESCRIPTION:ABM 2027 paid holiday. Early release at 2 p.m. the day before\, with People Leader approval.
+END:VEVENT
+BEGIN:VEVENT
+UID:abm-2027-holiday-8@abm-ne
+DTSTAMP:20261112T120000Z
+DTSTART;VALUE=DATE:20271126
+DTEND;VALUE=DATE:20271127
+SUMMARY:ABM Paid Holiday – Friday after Thanksgiving
+TRANSP:TRANSPARENT
+DESCRIPTION:ABM 2027 paid holiday. Early release at 2 p.m. the day before\, with People Leader approval.
+END:VEVENT
+BEGIN:VEVENT
+UID:abm-2027-holiday-9@abm-ne
+DTSTAMP:20261112T120000Z
+DTSTART;VALUE=DATE:20271224
+DTEND;VALUE=DATE:20271225
+SUMMARY:ABM Paid Holiday – Christmas Day (observed)
+TRANSP:TRANSPARENT
+DESCRIPTION:ABM 2027 paid holiday. Early release at 2 p.m. the day before\, with People Leader approval.
+END:VEVENT
+BEGIN:VEVENT
+UID:abm-2027-holiday-10@abm-ne
+DTSTAMP:20261112T120000Z
+DTSTART;VALUE=DATE:20271231
+DTEND;VALUE=DATE:20280101
+SUMMARY:ABM Paid Holiday – New Year's Day 2028 (observed)
+TRANSP:TRANSPARENT
+DESCRIPTION:ABM 2027 paid holiday. Early release at 2 p.m. the day before\, with People Leader approval.
+END:VEVENT
+END:VCALENDAR
